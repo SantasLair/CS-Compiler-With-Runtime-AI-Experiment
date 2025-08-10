@@ -8,9 +8,8 @@ export class Player extends GameObjects.Image {
     private targetX: number = 0;
     private targetY: number = 0;
     private moveDir: { dx: number, dy: number } = { dx: 0, dy: 0 };
-    private desiredMoveDir: { dx: number, dy: number } = { dx: 0, dy: 0 };  
-    private hasMovementInput: boolean = false;
-    private isSnapped: boolean = false;
+    private keyPressDelayFrames: number = 10;
+    private keyPressFrameCount: number = 0;
 
     cursors: Phaser.Types.Input.Keyboard.CursorKeys;
     private debugDiv: HTMLDivElement;
@@ -66,7 +65,6 @@ export class Player extends GameObjects.Image {
     snapToGrid() {
         this.x = Math.round(this.x / this.tileSize) * this.tileSize;
         this.y = Math.round(this.y / this.tileSize) * this.tileSize;
-        this.isSnapped = true;
     }
 
     getMoveDirection() {
@@ -77,12 +75,18 @@ export class Player extends GameObjects.Image {
         if (this.cursors.down.isDown) dy += 1;
 
         // Normalize diagonal movement
+        // Delay taking action on keypress for a few frames to allow diagonal movement
         if (dx !== 0 && dy !== 0) {
-            dx *= Math.SQRT1_2;
-            dy *= Math.SQRT1_2;
+            this.keyPressFrameCount += 1; 
+            if (this.keyPressFrameCount >= this.keyPressDelayFrames) {
+                dx *= Math.SQRT1_2;
+                dy *= Math.SQRT1_2;
+            }
+        }
+        else {
+            this.keyPressFrameCount = 0;
         }
 
-        this.hasMovementInput = (dx !== 0 || dy !== 0);
         return { dx, dy };
     }
 
