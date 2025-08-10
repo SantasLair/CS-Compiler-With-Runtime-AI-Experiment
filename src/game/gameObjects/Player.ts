@@ -133,7 +133,12 @@ export class Player extends GameObjects.Image {
         // Move toward target if moving
         if (this.moving) {
             // Calculate progress based on speed and delta
-            this.moveProgress += (this.speed / this.tileSize) * (delta / 16);
+            let moveSteps = this.tileSize;
+            if (this.moveDir.dx != 0 && this.moveDir.dy != 0) {
+                // add extra steps for diagonals
+                moveSteps += moveSteps *= Math.SQRT1_2;
+            }
+            this.moveProgress += (this.speed / moveSteps) * (delta / 16);
             if (this.moveProgress >= 1) {
                 this.x = this.targetX;
                 this.y = this.targetY;
