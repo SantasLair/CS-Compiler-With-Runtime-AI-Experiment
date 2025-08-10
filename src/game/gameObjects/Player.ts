@@ -2,13 +2,13 @@ import { Scene, GameObjects } from 'phaser';
 
 export class Player extends GameObjects.Image {
     static readonly DEFAULT_TEXTURE = 'pixel-man';
-    private speed: number = 4;
+    private speed: number = 6;
     private tileSize: number = 64;
     private moving: boolean = false;
     private targetX: number = 0;
     private targetY: number = 0;
     private moveDir: { dx: number, dy: number } = { dx: 0, dy: 0 };
-    private keyPressDelayFrames: number = 10;
+    private keyPressDelayFrames: number = 4;
     private keyPressFrameCount: number = 0;
 
     cursors: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -74,20 +74,18 @@ export class Player extends GameObjects.Image {
         if (this.cursors.up.isDown) dy += -1;
         if (this.cursors.down.isDown) dy += 1;
 
-        // Normalize diagonal movement
-        // Delay taking action on keypress for a few frames to allow diagonal movement
-        if (dx !== 0 && dy !== 0) {
-            this.keyPressFrameCount += 1; 
-            if (this.keyPressFrameCount >= this.keyPressDelayFrames) {
-                dx *= Math.SQRT1_2;
-                dy *= Math.SQRT1_2;
-            }
+        if (dx !== 0 || dy !== 0) {
+            this.keyPressFrameCount += 1;
         }
         else {
             this.keyPressFrameCount = 0;
         }
 
-        return { dx, dy };
+        if (this.keyPressFrameCount >= this.keyPressDelayFrames) {
+            return {dx, dy};
+        }
+
+        return { dx: 0, dy: 0 };
     }
 
     canChangeDirection(): boolean {
@@ -113,22 +111,18 @@ export class Player extends GameObjects.Image {
 
         // Only process a move if not already moving
         if (!this.moving) {
-            let dx = 0, dy = 0;
-            if (this.cursors.left.isDown) dx -= 1;
-            if (this.cursors.right.isDown) dx += 1;
-            if (this.cursors.up.isDown) dy -= 1;
-            if (this.cursors.down.isDown) dy += 1;
+            var moveDir = this.getMoveDirection();
 
             // Remove normalization for diagonal movement
             // Each move (including diagonal) moves exactly one tile in each direction
 
             // Only move if a direction is pressed
-            if (dx !== 0 || dy !== 0) {
-                this.moveDir = { dx, dy };
+            if (moveDir.dx !== 0 || moveDir.dy !== 0) {
+                this.moveDir = moveDir;
                 this.startX = Math.round(this.x / this.tileSize) * this.tileSize;
                 this.startY = Math.round(this.y / this.tileSize) * this.tileSize;
-                this.targetX = this.startX + dx * this.tileSize;
-                this.targetY = this.startY + dy * this.tileSize;
+                this.targetX = this.startX + moveDir.dx * this.tileSize;
+                this.targetY = this.startY + moveDir.dy * this.tileSize;
                 this.moveProgress = 0;
                 this.moving = true;
             }
