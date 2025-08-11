@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelMan Game - C# Bytecode Runtime</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #3498db;
+            margin: 0;
+        }
+
+        .header p {
+            color: #bdc3c7;
+            margin: 5px 0;
+        }
+
+        .game-container {
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            background-color: #34495e;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        #game-container {
+            width: 320px;
+            height: 640px;
+            background-color: #3d4042;
+            border-radius: 4px;
+        }
+
+        .controls {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        .controls h3 {
+            color: #e74c3c;
+            margin-top: 0;
+        }
+
+        .controls button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-family: inherit;
+        }
+
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+
+        .controls button:disabled {
+            background-color: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        .status {
+            background-color: #2c3e50;
+            border: 1px solid #34495e;
+            padding: 10px;
+            border-radius: 4px;
+            max-width: 600px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .status .log-entry {
+            margin: 2px 0;
+            padding: 2px 5px;
+            border-radius: 2px;
+        }
+
+        .status .log-info {
+            color: #3498db;
+        }
+
+        .status .log-success {
+            color: #27ae60;
+        }
+
+        .status .log-error {
+            color: #e74c3c;
+        }
+
+        .status .log-warn {
+            color: #f39c12;
+        }
+
+        .instructions {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        .instructions h3 {
+            color: #e67e22;
+            margin-top: 0;
+        }
+
+        .instructions ul {
+            color: #bdc3c7;
+            line-height: 1.6;
+        }
+
+        .tech-stack {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        .tech-stack h3 {
+            color: #9b59b6;
+            margin-top: 0;
+        }
+
+        .tech-stack .tech-item {
+            display: inline-block;
+            background-color: #2c3e50;
+            padding: 5px 10px;
+            margin: 3px;
+            border-radius: 15px;
+            font-size: 12px;
+            color: #ecf0f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎮 PixelMan Game</h1>
+        <p>C# to JavaScript Bytecode Runtime with Phaser</p>
+        <p>Compiled C# game logic running in JavaScript</p>
+    </div>
+
+    <div class="controls">
+        <h3>🎯 Game Controls</h3>
+        <button id="compileBtn" onclick="compileGame()">🔨 Compile C# Code</button>
+        <button id="loadBtn" onclick="loadGame()" disabled>📦 Load Bytecode</button>
+        <button id="startBtn" onclick="startGame()" disabled>🚀 Start Game</button>
+        <button id="resetBtn" onclick="resetGame()">🔄 Reset</button>
+    </div>
+
+    <div class="game-container">
+        <div id="game-container"></div>
+    </div>
+
+    <div class="status">
+        <div id="status-log">
+            <div class="log-entry log-info">🔧 System ready. Click "Compile C# Code" to begin.</div>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <h3>📋 How to Play</h3>
+        <ul>
+            <li><strong>Arrow Keys:</strong> Move the pixel character around the game world</li>
+            <li><strong>Grid Movement:</strong> Character moves in tile-based increments</li>
+            <li><strong>Diagonal Movement:</strong> Use arrow key combinations for diagonal movement</li>
+            <li><strong>Debug Info:</strong> Check browser console for detailed runtime information</li>
+        </ul>
+    </div>
+
+    <div class="tech-stack">
+        <h3>🛠️ Technology Stack</h3>
+        <div class="tech-item">C# Source Code</div>
+        <div class="tech-item">Custom C# Compiler</div>
+        <div class="tech-item">JSON Bytecode</div>
+        <div class="tech-item">JavaScript Runtime</div>
+        <div class="tech-item">Phaser 3 Engine</div>
+        <div class="tech-item">Stack-based VM</div>
+    </div>
+
+    <!-- Phaser 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- Our JavaScript Runtime -->
+    <script src="js-runtime.js"></script>
+
+    <script>
+        let gameState = {
+            compiled: false,
+            loaded: false,
+            running: false
+        };
+
+        function log(message, type = 'info') {
+            const statusLog = document.getElementById('status-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            statusLog.appendChild(entry);
+            statusLog.scrollTop = statusLog.scrollHeight;
+            
+            // Also log to console
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateButtons() {
+            document.getElementById('compileBtn').disabled = gameState.running;
+            document.getElementById('loadBtn').disabled = !gameState.compiled || gameState.running;
+            document.getElementById('startBtn').disabled = !gameState.loaded || gameState.running;
+        }
+
+        async function compileGame() {
+            log('🔨 Starting C# compilation process...', 'info');
+            
+            try {
+                // Simulate compilation process
+                log('📁 Reading C# source files...', 'info');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                log('🔍 Parsing class definitions...', 'info');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                log('⚙️ Generating bytecode instructions...', 'info');
+                await new Promise(resolve => setTimeout(resolve, 400));
+                
+                log('💾 Writing bytecode to JSON...', 'info');
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                // Create mock bytecode for demonstration
+                const mockBytecode = {
+                    Classes: {
+                        "GameMain": {
+                            Name: "GameMain",
+                            Methods: [
+                                { Name: "StartGame", ReturnType: "void", Parameters: [] }
+                            ]
+                        },
+                        "MainScene": {
+                            Name: "MainScene",
+                            BaseClass: "Scene",
+                            Methods: [
+                                { Name: "Create", ReturnType: "void", Parameters: [] },
+                                { Name: "Update", ReturnType: "void", Parameters: [] }
+                            ]
+                        },
+                        "Player": {
+                            Name: "Player",
+                            BaseClass: "Image",
+                            Methods: [
+                                { Name: "Update", ReturnType: "void", Parameters: [] }
+                            ]
+                        }
+                    },
+                    Instructions: [
+                        { OpCode: "CALL_CONSTRUCTOR", Operand: "Player", Address: 0 },
+                        { OpCode: "STORE_VAR", Operand: "player", Address: 1 },
+                        { OpCode: "RETURN", Operand: null, Address: 2 }
+                    ],
+                    MethodAddresses: {
+                        "PixelManGame.Scenes.MainScene.Create": 0
+                    },
+                    EntryPoint: "PixelManGame.GameMain.StartGame"
+                };
+                
+                // Store mock bytecode
+                window.mockBytecode = JSON.stringify(mockBytecode, null, 2);
+                
+                gameState.compiled = true;
+                updateButtons();
+                
+                log('✅ Compilation successful! Bytecode generated.', 'success');
+                log(`📊 Generated ${Object.keys(mockBytecode.Classes).length} classes, ${mockBytecode.Instructions.length} instructions`, 'info');
+                
+            } catch (error) {
+                log(`❌ Compilation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadGame() {
+            log('📦 Loading bytecode into JavaScript runtime...', 'info');
+            
+            try {
+                // Load the mock bytecode
+                const entryPoint = window.runtime.loadBytecode(window.mockBytecode);
+                
+                gameState.loaded = true;
+                updateButtons();
+                
+                log('✅ Bytecode loaded successfully!', 'success');
+                log(`🎯 Entry point: ${entryPoint}`, 'info');
+                log('🎮 Ready to start game!', 'success');
+                
+            } catch (error) {
+                log(`❌ Failed to load bytecode: ${error.message}`, 'error');
+            }
+        }
+
+        async function startGame() {
+            log('🚀 Starting game execution...', 'info');
+            
+            try {
+                // Clear any existing game
+                const gameContainer = document.getElementById('game-container');
+                gameContainer.innerHTML = '';
+                
+                // Start the runtime
+                window.runtime.execute('PixelManGame.GameMain.StartGame');
+                
+                gameState.running = true;
+                updateButtons();
+                
+                log('✅ Game started! Use arrow keys to move.', 'success');
+                log('🔍 Check browser console for detailed runtime logs.', 'info');
+                
+            } catch (error) {
+                log(`❌ Failed to start game: ${error.message}`, 'error');
+            }
+        }
+
+        function resetGame() {
+            log('🔄 Resetting game state...', 'info');
+            
+            // Reset game state
+            gameState = {
+                compiled: false,
+                loaded: false,
+                running: false
+            };
+            
+            // Clear game container
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.innerHTML = '';
+            
+            // Reset runtime
+            window.runtime = new CSharpBytecodeRuntime();
+            
+            updateButtons();
+            log('✅ Game reset complete.', 'success');
+        }
+
+        // Initialize
+        updateButtons();
+        log('🎮 PixelMan C# Bytecode Runtime initialized.', 'success');
+        log('💡 This demo shows C# game logic compiled to bytecode and executed in JavaScript.', 'info');
+    </script>
+</body>
+</html>

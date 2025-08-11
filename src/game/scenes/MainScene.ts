@@ -16,7 +16,7 @@ export class MainScene extends Scene
     create ()
     {
         // Create the player using the Player game object
-        this.player = new Player(this, 640/2, 420/2);
+        this.player = new Player(this, 448/2, 600);
     }
 
     update ()
